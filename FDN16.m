@@ -14,13 +14,16 @@ y = zeros(1,length(x));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize FDN Matrix
 %% using Hadamard Matrix
-A = 1/sqrt(16) * hadamard(16);
+%A = 1/sqrt(16) * hadamard(16);
 
 %% using Householder Matrix
-% matrix = 0.5*[1 -1 -1 -1; -1 1 -1 -1; -1 -1 1 -1; -1 -1 -1 1 ];
-% %Recursive Embedding
-% A = 0.5*[matrix -matrix -matrix -matrix; -matrix matrix -matrix -matrix;...
-%    -matrix -matrix matrix -matrix; -matrix -matrix -matrix matrix];
+ matrix = 0.5*[1 -1 -1 -1; -1 1 -1 -1; -1 -1 1 -1; -1 -1 -1 1 ];
+ %Recursive Embedding
+ A = 0.5*[matrix -matrix -matrix -matrix; -matrix matrix -matrix -matrix;...
+    -matrix -matrix matrix -matrix; -matrix -matrix -matrix matrix];
+
+%% Diagonal Matrix
+%A = diag(ones(1,16));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialize Dely-Line buffers
 m = delayTimes;
