@@ -12,18 +12,26 @@ tinput = 0:dt:(length(x)*dt)-dt;
 
 y = zeros(1,length(x));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Initialize FDN Matrix
-%% using Hadamard Matrix
+%% Initialize FDN Matrix
+% Hadamard Matrix
 A = 1/sqrt(8) * hadamard(8);
 
-%% using Householder Matrix
-%  matrix = 0.5*[1 -1 -1 -1; -1 1 -1 -1; -1 -1 1 -1; -1 -1 -1 1 ];
-%  %Recursive Embedding
-%  A = 0.5*[matrix -matrix -matrix -matrix; -matrix matrix -matrix -matrix;...
-%     -matrix -matrix matrix -matrix; -matrix -matrix -matrix matrix];
+% Householder Matrix (sometimes unstable)
+% N = 8;
+% u = ones(N,1);
+% A = eye(N) -  (2 / N) * (u * u');
 
-%% Diagonal Matrix
-%A = diag(ones(1,16));
+%Householder via Revursive Embedding (Experimental)
+% matrix = 0.5*[1 -1 -1 -1; -1 1 -1 -1; -1 -1 1 -1; -1 -1 -1 1 ];
+% A = 0.5*[matrix, -matrix; -matrix matrix];
+
+% Noise Matrix
+% N = 8;
+% N = randn(N);
+% [A,~] = qr(N);
+
+% Diagonal Matrix
+%A = diag(ones(1,8));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialize Dely-Line buffers
 m = delayTimes;
@@ -62,7 +70,7 @@ end
 broadGains = 10.^(gains(1,:)/20);
 
 %% FDN Loop
-states = zeros(2,10,16);
+states = zeros(2,10,8);
 
 for n = length(segm):length(y)
     temp = [z1(m(1)) z2(m(2)) z3(m(3)) z4(m(4)) z5(m(5)) z6(m(6)) z7(m(7)) z8(m(8))];
