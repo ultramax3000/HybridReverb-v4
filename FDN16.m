@@ -12,17 +12,22 @@ tinput = 0:dt:(length(x)*dt)-dt;
 
 y = zeros(1,length(x));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Initialize FDN Matrix
-%% using Hadamard Matrix
+%% Initialize FDN Matrix
+% Hadamard Matrix
 %A = 1/sqrt(16) * hadamard(16);
 
-%% using Householder Matrix
+% Householder Matrix (Was found to give more "colourless" results)
  matrix = 0.5*[1 -1 -1 -1; -1 1 -1 -1; -1 -1 1 -1; -1 -1 -1 1 ];
  %Recursive Embedding
  A = 0.5*[matrix -matrix -matrix -matrix; -matrix matrix -matrix -matrix;...
     -matrix -matrix matrix -matrix; -matrix -matrix -matrix matrix];
 
-%% Diagonal Matrix
+% Noise Matrix
+% N = 16;
+% N = randn(N);
+% [A,~] = qr(N);
+
+% Diagonal Matrix
 %A = diag(ones(1,16));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialize Dely-Line buffers
