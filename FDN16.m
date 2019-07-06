@@ -6,7 +6,7 @@ function [FDNout] = FDN16(audio,fs,centerFreqs,shelvingFreqs,...
 x = audio;
 
 segm = zeros(fs,1);
-x = [segm; x; segm; segm];
+x = [x; segm; segm; segm];
 dt = 1/fs;
 tinput = 0:dt:(length(x)*dt)-dt;
 
@@ -76,7 +76,7 @@ broadGains = 10.^(gains(1,:)/20);
 %% FDN Loop
 states = zeros(2,10,16);
 
-for n = length(segm):length(y)
+for n = 1:length(y)
     temp = [z1(m(1)) z2(m(2)) z3(m(3)) z4(m(4)) z5(m(5)) z6(m(6)) z7(m(7)) z8(m(8))...
         z9(m(9)) z10(m(10)) z11(m(11)) z12(m(12)) z13(m(13)) z14(m(14)) z15(m(15)) z16(m(16))];
     
