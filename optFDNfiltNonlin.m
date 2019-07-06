@@ -21,8 +21,8 @@ prototypeSOS = proportionalParametricEQ(centerOmega, shelvingOmega, R, prototype
 [B,prototypeH,prototypeW] = probeSOS (prototypeSOS, controlFrequencies, fftLen, fs);
 % B = B / prototypeGain; % dB vs control frequencies ("Interaction Matrix")
  
-% plot
-figure(2); 
+% Plot the Magnitude response of the Filters
+figure; 
 semilogx(prototypeW,mag2db(abs(prototypeH)))
 ylim([0 11])
 xlim([10 fs/2])
@@ -74,7 +74,7 @@ gainsNonlin = optGainNonlin;
 % title('Approximation Magnitude Response')
 % legend('Target', 'Actual EQ', 'Design EQ','Location','SouthEast');
  
-figure(4)
+figure
 heatmap(B);
 title(['Interaction Matrix with Filter Magnitude Responses (' num2str(numControlFreqs) ' Control Frequencies)']) 
 

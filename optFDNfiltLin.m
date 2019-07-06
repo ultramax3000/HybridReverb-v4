@@ -1,4 +1,4 @@
-function [gains] = optFDNfiltLin(T60full,delayTimes,centerFreqs,shelvingFreqs,R,fs,numControlFreqs)
+function [gains] = optFDNfiltLin(T60bands,delayTimes,centerFreqs,shelvingFreqs,R,fs,numControlFreqs)
 fftLen = 2^16;
 
 numFreq = length(centerFreqs) + length(shelvingFreqs);
@@ -39,16 +39,17 @@ dBbound = 10;
 x0 = dBbound*ones(numFreq+1, 1);
 %x0 = ones(numFreq+1, 1);
 
-% upperBound = [inf, dBbound * prototypeGain * ones(1,numFreq)];
-% lowerBound = -upperBound;
+%Set bounds between -10 and 10 dB
+upperBound = [inf, dBbound * prototypeGain * ones(1,numFreq)];
+lowerBound = -upperBound;
 
 %Limit upper bounds to 0 dB instead
-upperBound = zeros(numFreq+1, 1);
-lowerBound = -[inf, dBbound * prototypeGain * ones(1,numFreq)];
+%upperBound = zeros(numFreq+1, 1);
+%lowerBound = -[inf, dBbound * prototypeGain * ones(1,numFreq)];
 
 %Calculate tau (27) for each dealy-line:
 for i = 1:length(delayTimes)
-    tau(:,i) = -60*(1./(fs*T60full))*delayTimes(i,:);
+    tau(:,i) = -60*(1./(fs*T60bands))*delayTimes(i,:);
 end
 
 %Optimize gains for each individual delay-line
