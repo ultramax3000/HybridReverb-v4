@@ -2,19 +2,22 @@
 
 clear all; clc; close all
 
-%Specify files for IR and Dry Signal
+%% Specify files for IR and Dry Signal
+
 audioInput = 'vox10.wav';
-
-%IRinputMono = 'academy_yard_mono.wav';     %IR Mono
-IRinputMono = 'nave_cathedral_mono.wav';   %IR Mono
-%IRinputMono = 'phipps_hall_huddersfield_mono.wav'; % EDR doesn't work (?)
-%IRinputMono = 'BM7_Medium_Chamber_mono.wav';
-
-%IRinputStereo = 'nave_cathedral.wav';      %IR Stereo
-
-%Read audio-files into arrays
-[IR, fs,] = audioread(IRinputMono);
 [audio, fs2] = audioread(audioInput);
+
+%Use an Impulse:
+%x = [0; 1; 0];
+
+%IR Mono
+% IRMono = 'academy_yard_mono.wav';    
+ IRMono = 'nave_cathedral_mono.wav';   
+% IRMono = 'phipps_hall_huddersfield_mono.wav'; % EDR doesn't work (?)
+% IRMono = 'BM7_Medium_Chamber_mono.wav';
+
+%Store IR in array
+[IR, fs,] = audioread(IRMono);
 
 %Make sure that sampling frequencies are equal for IR and dry signal
 if (fs > fs2 || fs < fs2)
@@ -44,7 +47,7 @@ Q = sqrt(R) / (R-1);
 
 %% Early Reflections Processing
 %Truncate the IR to only the Early Reflections, using a 20ms Window:
-[truncTime, truncIR] = truncate(IR, fs, 20);
+[truncTime, truncIR] = truncateIR(IR, fs, 20);
 
 %CONVOLVE the IR with the dry audio:
 dryWet = 100;
@@ -58,32 +61,30 @@ windowType = 'hann';    % type of windowing used for each frame
 freqs = [shelvingFreqs(1),centerFreqs,shelvingFreqs(2)];
 numControlFreqs = 100;
 
-[T60full] = calcEDR(IR,fs,frameSize,overlap,windowType,numControlFreqs);
+[T60bands] = calcEDR(IR,fs,frameSize,overlap,windowType,numControlFreqs);
 
 %Calculate global T60 acording to ISO 3382-1:2009:
-[T60]=iosr.acoustics.irStats(IRinputMono,'graph',true,'spec','mean');
+[T60]=iosr.acoustics.irStats(IRMono,'graph',true,'spec','mean');
 
 %% Optimization
 %Optimize parametric filter gains from magnitude response (Linear Solution)
-%[gainsLin]   = optFDNfiltLin(T60full,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+[gainsLin]   = optFDNfiltLin(T60bands,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
 
 %Optimize parametric filter gains from T60 times (Nonlinear Solution)
-[gainsNonlin]   = optFDNfiltNonlin(T60full,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+%[gainsNonlin]   = optFDNfiltNonlin(T60full,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
 
 %% Pass gain coefficients to FDN and process input signal
-
 % 16x16 FDN:
-%Excite FDN with an Impulse:
-x = [0; 1; 0];
-FDNimp = FDN16(x,fs,centerFreqs,shelvingFreqs,R,gainsNonlin,delayTimes');
-
-%FDNout = FDN16(audio,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes);
+FDN16out = FDN16(audio,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes' );
 
 % 8x8 FDN
-%  x = [0; 1; 0];
-%  FDNimp = FDN8(x,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
+% FDN8out = FDN8(x,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
 
+%% Mixing down 16x16 FDN to stereo
+IACC = 0.5; %Interaural Correlation Coefficient between 0 and 1.0
+numChan = 16;
 
+FDNstereo = mixdown(FDNmulti,IACC,numChan);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Prepare sample for listening
 % [inputSignal] = audioread(audioInput);
@@ -99,4 +100,4 @@ FDNimp = FDN16(x,fs,centerFreqs,shelvingFreqs,R,gainsNonlin,delayTimes');
 % pause(3.5)
 % soundsc(convOnly, fs);
 % pause(3.5)
-% soundsc(FDNout, fs);
+% soundsc(FDNout, fs); 
