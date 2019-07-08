@@ -4,20 +4,21 @@ clear all; clc; close all
 
 %% Specify files for IR and Dry Signal
 
-audioInput = 'vox10.wav';
-[audio, fs2] = audioread(audioInput);
+% audioInput = 'vox10.wav';
+% [audio, fs] = audioread(audioInput);
 
 %Use an Impulse:
-%x = [0; 1; 0];
+audio = [0; 1; 0];
+fs = 44100;
 
 %IR Mono
 % IRMono = 'academy_yard_mono.wav';    
  IRMono = 'nave_cathedral_mono.wav';   
 % IRMono = 'phipps_hall_huddersfield_mono.wav'; % EDR doesn't work (?)
-% IRMono = 'BM7_Medium_Chamber_mono.wav';
+%IRMono = 'BM7_Medium_Chamber_mono.wav';
 
 %Store IR in array
-[IR, fs,] = audioread(IRMono);
+[IR, fs2,] = audioread(IRMono);
 
 %Make sure that sampling frequencies are equal for IR and dry signal
 if (fs > fs2 || fs < fs2)
@@ -61,31 +62,50 @@ windowType = 'hann';    % type of windowing used for each frame
 freqs = [shelvingFreqs(1),centerFreqs,shelvingFreqs(2)];
 numControlFreqs = 100;
 
-[T60bands] = calcEDR(IR,fs,frameSize,overlap,windowType,numControlFreqs);
+[T60bands] = calcEDR(IR,fs,frameSize,overlap,windowType,freqs);
 
 %Calculate global T60 acording to ISO 3382-1:2009:
-[T60]=iosr.acoustics.irStats(IRMono,'graph',true,'spec','mean');
+%[T60]=iosr.acoustics.irStats(IRMono,'graph',true,'spec','mean');
 
 %% Optimization
 %Optimize parametric filter gains from magnitude response (Linear Solution)
-[gainsLin]   = optFDNfiltLin(T60bands,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+%[gains]   = optFDNfiltLin(T60bands,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
 
 %Optimize parametric filter gains from T60 times (Nonlinear Solution)
-%[gainsNonlin]   = optFDNfiltNonlin(T60full,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+[gains]   = optFDNfiltNonlin(T60bands,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
 
 %% Pass gain coefficients to FDN and process input signal
 % 16x16 FDN:
-FDN16out = FDN16(audio,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes' );
+FDNout = FDN16(audio,fs,centerFreqs,shelvingFreqs,R,gains,delayTimes' );
 
 % 8x8 FDN
-% FDN8out = FDN8(x,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
+% FDNout = FDN8(x,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
 
-%% Mixing down 16x16 FDN to stereo
-IACC = 0.5; %Interaural Correlation Coefficient between 0 and 1.0
-numChan = 16;
+%% Mix early and late reverberation to create final singal
+%Window the early and late reflections, so that they crossfade well
+% mix = 100;
+% 
+% FDNout = rot90(FDNout);
+% 
+% FDNLength = length(FDNout);
+% startWind = (floor(truncTime/1000*fs)-32);
+% mixWindow = hann(64);
+% FDNout(1:startWind,1) = zeros(startWind,1);
+% FDNout((startWind+1):(startWind+32)) = FDNout((startWind+1):(startWind+32)).*mixWindow(1:32)';
+% 
+% %Zero-pad so that matrix dimensions agree
+% audioLength = length(audio);
+% convLength = length(convER);
+% audio((audioLength+1):FDNLength,1) = zeros((FDNLength - audioLength),1);
+% convER((convLength+1):FDNLength,1) = zeros((FDNLength - convLength),1);
+% 
+% %Add the wet audio before mixing with dry
+% wet = (convER(:,1) + FDNout(:,1));
+% 
+% %Add the early and late reflections and mix with dry audio and normalise
+% processedAudio(:,1) = (mix/100)*(wet(:,1)) + ((100-mix)/100)*audio;
 
-FDNstereo = mixdown(FDNmulti,IACC,numChan);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Demo against Convolution only
 %Prepare sample for listening
 % [inputSignal] = audioread(audioInput);
 % 
