@@ -2,11 +2,19 @@
 
 clear all; clc; close all
 
-%Specify files for IR and Dry Signal
-audioInput = 'vox10.wav';
-%[audio, fs2] = audioread(audioInput);
+%% Specify files for IR and Dry Signal
 
-%IR Mono
+audioInput = 'vox10.wav';
+%[audio, fs] = audioread(audioInput);
+
+%Use an Impulse:
+audio = [0; 1; 0];
+fs = 44100;
+
+%Here, both a mono- and stereo IR have to be specified,because analysis and 
+%optimization only make sense to be performed on a mono IR
+
+%IR Mono:
 %IRinputMono = 'academy_yard_mono.wav';     
 IRMono = 'nave_cathedral_mono.wav';   
 %IRinputMono = 'phipps_hall_huddersfield_mono.wav'; % EDR doesn't work (?)
@@ -16,11 +24,7 @@ IRStereo = 'nave_cathedral.wav';      %IR Stereo
 
 %Read audio-files into arrays
 [IR, fs,] = audioread(IRMono);
-[IRstereo, fs,] = audioread(IRStereo);
-
-%Impulse as input signal:
-audio = [0; 1; 0];
-fs2 = 44100;
+[IRstereo, fs2] = audioread(IRStereo);
 
 %Make sure that sampling frequencies are equal for IR and dry signal
 if (fs > fs2 || fs < fs2)
@@ -83,7 +87,7 @@ numControlFreqs = 100;
 %% Pass gain coefficients to FDN and process input signal
 
 %16x16 FDN
-FDN16multiOut = FDN16multiOut(audio,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
+FDN16multiOut = FDN16multi(audio,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
 
 %8x8 FDN
 %  FDNimp = FDN8(x,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
@@ -109,7 +113,7 @@ FDNstereo((startWind+1):(startWind+32)) = FDNstereo((startWind+1):(startWind+32)
 audioLength = length(audio);
 convLength = length(convER);
 audio((audioLength+1):FDNLength,1) = zeros((FDNLength - audioLength),1);
-convER((convLength+1):FDNLength,1) = zeros((FDNLength- convLength),1);
+convER((convLength+1):FDNLength,1) = zeros((FDNLength - convLength),1);
 
 %Add the wet audio before mixing with dry
 wet(:,1) = (convER(:,1) + FDNstereo(:,1));
