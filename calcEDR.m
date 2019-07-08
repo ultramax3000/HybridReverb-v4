@@ -1,4 +1,4 @@
-function [T60full] = calcEDR(signal,fs,frameSize,overlap,windowType,numControlFreqs)
+function [T60full] = calcEDR(signal,fs,frameSize,overlap,windowType,freqs)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -6,8 +6,6 @@ function [T60full] = calcEDR(signal,fs,frameSize,overlap,windowType,numControlFr
 %overlap:       fraction of frame overlapping
 %windowType:    type of windowing used for each frame
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-controlFrequencies = logspace(log10(1), log10(fs/2.1),numControlFreqs+1);
-freqs = controlFrequencies;
 
 % calculate STFT frames
 minFrameLen = fs*frameSize/1000;
