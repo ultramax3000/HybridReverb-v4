@@ -1,4 +1,4 @@
-function [T60full] = calcEDR(signal,fs,frameSize,overlap,windowType,freqs)
+function [T60full] = calcEDR100(signal,fs,frameSize,overlap,windowType,numControlFreqs)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -6,6 +6,10 @@ function [T60full] = calcEDR(signal,fs,frameSize,overlap,windowType,freqs)
 %overlap:       fraction of frame overlapping
 %windowType:    type of windowing used for each frame
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Calculate 100 log-spaced frequencies between DC and Nyquist
+controlFrequencies = logspace(log10(1), log10(fs/2.1),numControlFreqs+1);
+freqs = controlFrequencies;
 
 % calculate STFT frames
 minFrameLen = fs*frameSize/1000;
