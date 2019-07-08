@@ -5,20 +5,25 @@ numFreq = length(centerFreqs) + length(shelvingFreqs);
 shelvingOmega = hertz2rad(shelvingFreqs, fs);
 centerOmega = hertz2rad(centerFreqs, fs);
 
+%Calculate attenuation per sample (Schlecht "Accurate Reverberation..."  Eq.2) 
+for i = 1:length(delayTimes)
+    targetGains(:,i) = -60*(1./(fs*T60bands))*delayTimes(i,:);
+end
+
 % control frequencies are spaced logarithmically
 controlFrequencies = logspace(log10(1), log10(fs/2.1),numControlFreqs+1);
 
-% target magnitude response via command gains
-targetFreqs = [1, centerFreqs fs];
-targetGains = [1; -1; 1; -1; 1; -1; 1; -1; 1; 1]*10; % dB
-targetInterp = interp1(targetFreqs, targetGains, controlFrequencies)';
-
+% Interpolate for target magnitude response via command gains
+ targetFreqs = [1, centerFreqs fs];
+ 
+ for j=1:size(targetGains,2)
+ tau(:,j) = interp1(targetFreqs, targetGains(:,j), controlFrequencies)';
+ end
 %% desgin prototype of the biquad sections
 prototypeGain = 1; % dB
 prototypeGainArray = prototypeGain * ones(numFreq+1,1);
 prototypeSOS = proportionalParametricEQ(centerOmega, shelvingOmega, R, prototypeGainArray);
 [B,prototypeH,prototypeW] = probeSOS (prototypeSOS, controlFrequencies, fftLen, fs);
-% B = B / prototypeGain; % dB vs control frequencies ("Interaction Matrix")
 
 % plot
 figure(2);
@@ -35,9 +40,7 @@ ylabel('Magnitude [dB]')
 % at [-10dB,+10dB] with guaranteed no deviation from the self-similarity
 % property. The plot shows the deviation between design curve and actual
 % curve.
-dBbound = 10;
-x0 = dBbound*ones(numFreq+1, 1);
-%x0 = ones(numFreq+1, 1);
+ dBbound = 10;
 
 %Set bounds between -10 and 10 dB
 upperBound = [inf, dBbound * prototypeGain * ones(1,numFreq)];
@@ -47,19 +50,11 @@ lowerBound = -upperBound;
 %upperBound = zeros(numFreq+1, 1);
 %lowerBound = -[inf, dBbound * prototypeGain * ones(1,numFreq)];
 
-%Calculate tau (27) for each dealy-line:
-for i = 1:length(delayTimes)
-    tau(:,i) = -60*(1./(fs*T60bands))*delayTimes(i,:);
-end
-
 %Optimize gains for each individual delay-line
 optGainLin = zeros(11,length(delayTimes));
 for k = 1:size(tau,2)
     optGainLin(:,k) = lsqlin(B, tau(:,k), [],[],[],[], lowerBound, upperBound,[]);
 end
-
-% optG = G\targetInterp; % unconstrained solution
-%optimalSOS = proportionalParametricEQ( centerOmega, shelvingOmega, R, optGainLin );
 
 gains = optGainLin;
 %% plot
