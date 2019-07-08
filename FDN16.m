@@ -71,7 +71,7 @@ end
 % end
 
 % Retain broadband gains and convert to linear
-broadGains = 10.^(gains(1,:)/20);
+broadGains = 10.^(gains(11,:)/20);
 
 %% FDN Loop
 states = zeros(2,10,16);
