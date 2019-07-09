@@ -4,12 +4,12 @@ clear all; clc; close all
 
 %% Specify files for IR and Dry Signal
 
-audioInput = 'vox10.wav';
+%audioInput = 'vox10.wav';
 %[audio, fs] = audioread(audioInput);
 
 %Use an Impulse:
-audio = [0; 1; 0];
-fs = 44100;
+% audio = [0; 1; 0];
+% fs = 44100;
 
 %Here, both a mono- and stereo IR have to be specified,because analysis and 
 %optimization only make sense to be performed on a mono IR
@@ -26,15 +26,31 @@ IRStereo = 'nave_cathedral.wav';      %IR Stereo
 [IR, fs,] = audioread(IRMono);
 [IRstereo, fs2] = audioread(IRStereo);
 
+%Make truncated chunk of IR to use as "pre-filtered impulse"
+frameSize = 15;
+minFrameLen = round(fs*frameSize/1000);
+truncWin = hann(2*minFrameLen); %Use second half of a hann window for smoothing.
+truncWin = truncWin((minFrameLen+1):end);
+
+audio = IR(1:minFrameLen,1).*truncWin;
+
+%Make truncated chunk of IR to use as "pre-filtered impulse"
+% frameSize = 10;
+% minFrameLen = round(fs*frameSize/1000);
+% truncWin = hann(minFrameLen); %Use second half of a hann window for smoothing.
+% 
+% audio = IR(1:minFrameLen,1).*truncWin;
+
 %Make sure that sampling frequencies are equal for IR and dry signal
 if (fs > fs2 || fs < fs2)
     error('IR and input signal need to have same fs!');
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Global Parameters
+% Lowest and highes freqs have been adjusted to be equally spaced in
+% interaction Matrix
 centerFreqs = [62.5, 125, 250, 500, 1000, 2000, 4000, 8000];
-shelvingFreqs = [31.25, 16000];
+shelvingFreqs = [43, 11360];
 R = 3.6;                %relates to the Q-Factor
 Q = sqrt(R) / (R-1);
 
@@ -72,34 +88,35 @@ windowType = 'hann';    % type of windowing used for each frame
 freqs = [shelvingFreqs(1),centerFreqs,shelvingFreqs(2)];
 numControlFreqs = 100;
 
-[T60bands] = calcEDR(IR,fs,frameSize,overlap,windowType,numControlFreqs);
+[T60bands] = calcEDR(IR,fs,frameSize,overlap,windowType,freqs);
+%[T60bands100] = calcEDR(IR,fs,frameSize,overlap,windowType,numControlFreqs);
 
 %Calculate global T60 acording to ISO 3382-1:2009:
 [T60]=iosr.acoustics.irStats(IRMono,'graph',true,'spec','mean');
 
 %% Optimization
 %Optimize parametric filter gains from magnitude response (Linear Solution)
-[gainsLin]   = optFDNfiltLin(T60bands,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+[gains]   = optFDNfiltLin(T60bands,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
 
 %Optimize parametric filter gains from T60 times (Nonlinear Solution)
-%[gainsNonlin]   = optFDNfiltNonlin(T60full,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+initGain = 0.75;
+%[gains]   = optFDNfiltNonlin(T60bands,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs,initGain);
 
 %% Pass gain coefficients to FDN and process input signal
 
 %16x16 FDN
-FDN16multiOut = FDN16multi(audio,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
+FDN16multiOut = FDN16multi(audio,fs,centerFreqs,shelvingFreqs,R,gains,delayTimes');
 
 %8x8 FDN
 %  FDNimp = FDN8(x,fs,centerFreqs,shelvingFreqs,R,gainsLin,delayTimes');
 
-%% Mixing down 16x16 FDN to stereo
-IACC = 0.6; %Interaural Correlation Coefficient between 0 and 1.0
+%% Mixing down 16x16 FDN to Stereo
+IACC = 0.5; %Interaural Correlation Coefficient between 0 and 1.0
 numChan = 16;
 
 FDNstereo = mixdown(FDN16multiOut,IACC,numChan);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Mix early and late reverberation to create final singal
+%% Mix early and late reverberation to create final singal
 %Window the late reflections
 mix = 100;
 
