@@ -24,16 +24,17 @@ prototypeGain = 1; % dB
 prototypeGainArray = prototypeGain * ones(numFreq+1,1);
 prototypeSOS = proportionalParametricEQ(centerOmega, shelvingOmega, R, prototypeGainArray);
 [B,prototypeH,prototypeW] = probeSOS (prototypeSOS, controlFrequencies, fftLen, fs);
+B= B/prototypeGain;
 
 % plot
-figure(2);
-semilogx(prototypeW,mag2db(abs(prototypeH)))
-ylim([0 11])
-xlim([10 fs/2])
-grid on;
-title('Prototype Magnitude Response (Interaction Matrix)')
-xlabel('Frequency [Hz]')
-ylabel('Magnitude [dB]')
+% figure(2);
+% semilogx(prototypeW,mag2db(abs(prototypeH)))
+% ylim([0 11])
+% xlim([10 fs/2])
+% grid on;
+% title('Prototype Magnitude Response (Interaction Matrix)')
+% xlabel('Frequency [Hz]')
+% ylabel('Magnitude [dB]')
 
 %% Compute optimal parametric EQ gains (linear solution)
 % Either you can use a unconstrained linear solver or introduce gain bounds
@@ -72,7 +73,7 @@ gains = optGainLin;
 % legend('Target', 'Actual EQ', 'Design EQ','Location','SouthEast');
 
 figure(4)
-heatmap(B);
+imagesc(B);
 title(['Interaction Matrix with Filter Magnitude Responses (' num2str(numControlFreqs) ' Control Frequencies)'])
 
 end
