@@ -131,19 +131,6 @@ for n = 1:length(y)
     
 end
 FDNMultiOut = [y1; y2; y3; y4; y5; y6; y7; y8; y9; y10; y11; y12; y13; y14; y15; y16];
-%% Plot
-dt = 1/fs;
-plot(tinput,y,'g'); hold on;
-plot(tinput,x,'k'); xlabel('Seconds'); ylabel('Amplitude');
-title('16x16 Feedback Delay Network');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Spectrogram
-figure(1)
-subplot(2,1,1);
-specgram(x);
-title('Dry Signal');
-subplot(2,1,2);
-specgram(y);
-title('Wet Signal');
+
 end
 
