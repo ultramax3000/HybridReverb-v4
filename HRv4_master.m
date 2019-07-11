@@ -7,28 +7,38 @@ clear all; clc; close all
 % audioInput = 'vox10.wav';
 % [audio, fs] = audioread(audioInput);
 
-%Use an Impulse:
-audio = [0; 1; 0];
-fs = 44100;
+% %Use an Impulse:
+% audio = [0; 1; 0];
+ fs = 44100;
 
 %IR Mono
-% IRMono = 'academy_yard_mono.wav';    
- IRMono = 'nave_cathedral_mono.wav';   
-% IRMono = 'phipps_hall_huddersfield_mono.wav'; % EDR doesn't work (?)
+%IRMono  = 'TerrysWarehouse_mono.wav';
+%IRMono = 'nave_cathedral_mono.wav';   
 %IRMono = 'BM7_Medium_Chamber_mono.wav';
+IRMono = 'BM7_Small_Room_mono.wav';
 
 %Store IR in array
 [IR, fs2,] = audioread(IRMono);
+
+%Make truncated chunk of IR to use as "pre-filtered impulse"
+frameSize = 5;
+minFrameLen = round(fs*frameSize/1000);
+truncWin = hann(2*minFrameLen); %Use second half of a hann window for smoothing.
+truncWin = truncWin((minFrameLen+1):end); 
+audio = IR(1:minFrameLen,1).*truncWin;
+
+%Ad some seconds of silence after signal:
+audio = [audio; zeros(round(((length(IR)/2)+fs))-length(audio),1)];
 
 %Make sure that sampling frequencies are equal for IR and dry signal
 if (fs > fs2 || fs < fs2)
     error('IR and input signal need to have same fs!');
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Global Parameters
-centerFreqs = [62.5, 125, 250, 500, 1000, 2000, 4000, 8000];
-shelvingFreqs = [31.25, 16000];
+centerFreqs     = [62.5, 125, 250, 500, 1000, 2000, 4000, 8000];
+shelvingFreqs   = [43, 11360];
+%shelvingFreqs  = [31.25, 16000];
 R = 3.6;                %relates to the Q-Factor
 Q = sqrt(R) / (R-1);
 
@@ -72,7 +82,8 @@ numControlFreqs = 100;
 %[gains]   = optFDNfiltLin(T60bands,delayTimes',centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
 
 %Optimize parametric filter gains from T60 times (Nonlinear Solution)
-[gains]   = optFDNfiltNonlin(T60bands,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs);
+initGain = 0.75;
+[gains]   = optFDNfiltNonlin(T60bands,delayTimes', centerFreqs, shelvingFreqs,R,fs,numControlFreqs,initGain);
 
 %% Pass gain coefficients to FDN and process input signal
 % 16x16 FDN:
@@ -83,27 +94,27 @@ FDNout = FDN16(audio,fs,centerFreqs,shelvingFreqs,R,gains,delayTimes' );
 
 %% Mix early and late reverberation to create final singal
 %Window the early and late reflections, so that they crossfade well
-% mix = 100;
-% 
-% FDNout = rot90(FDNout);
-% 
-% FDNLength = length(FDNout);
-% startWind = (floor(truncTime/1000*fs)-32);
-% mixWindow = hann(64);
-% FDNout(1:startWind,1) = zeros(startWind,1);
-% FDNout((startWind+1):(startWind+32)) = FDNout((startWind+1):(startWind+32)).*mixWindow(1:32)';
-% 
-% %Zero-pad so that matrix dimensions agree
-% audioLength = length(audio);
-% convLength = length(convER);
-% audio((audioLength+1):FDNLength,1) = zeros((FDNLength - audioLength),1);
-% convER((convLength+1):FDNLength,1) = zeros((FDNLength - convLength),1);
-% 
-% %Add the wet audio before mixing with dry
-% wet = (convER(:,1) + FDNout(:,1));
-% 
-% %Add the early and late reflections and mix with dry audio and normalise
-% processedAudio(:,1) = (mix/100)*(wet(:,1)) + ((100-mix)/100)*audio;
+mix = 100;
+
+FDNout1 = FDNout';
+
+FDNLength = length(FDNout1);
+startWind = (floor(truncTime/1000*fs)-32);
+mixWindow = hann(64);
+FDNout1(1:startWind,1) = zeros(startWind,1);
+FDNout1((startWind+1):(startWind+32)) = FDNout1((startWind+1):(startWind+32)).*mixWindow(1:32);
+
+%Zero-pad so that matrix dimensions agree
+audioLength = length(audio);
+convLength = length(convER);
+audio((audioLength+1):FDNLength,1) = zeros((FDNLength - audioLength),1);
+convER((convLength+1):FDNLength,1) = zeros((FDNLength - convLength),1);
+
+%Add the wet audio before mixing with dry
+wet = (convER(:,1) + FDNout1(:,1));
+
+%Add the early and late reflections and mix with dry audio and normalise
+processedAudio(:,1) = (mix/100)*(wet(:,1)) + ((100-mix)/100)*audio;
 
 %% Demo against Convolution only
 %Prepare sample for listening

@@ -44,7 +44,6 @@ audio = IR(1:minFrameLen,1).*truncWin;
 % audio = IR(1:minFrameLen,1).*truncWin;
 
 %Ad some seconds of silence after signal:
-silence = 7; %in seconds
 audio = [audio; zeros(round((length(IR)/2))-length(audio),1)];
 
 %Make sure that sampling frequencies are equal for IR and dry signal
