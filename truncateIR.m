@@ -6,9 +6,6 @@ function [truncTime, truncIR] = truncateIR(IR, Fs, winSize)
 %Determines the end of the early reflections and truncates
 %the IR. The output time of truncation in msec and truncated
 %array are output.
-%
-%Rebecca Stewart
-%July 2006
 %__________________________________________________________________________
 %Function requires at least 3 inputs argument
 if nargin < 3
